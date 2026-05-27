@@ -1,0 +1,10 @@
+name: 阅读清单
+icon: null
+color: black
+order: 0
+sort: null
+filters:
+  all:
+  - field: type
+    op: equals
+    value: books
