@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tolaria 笔记工具调研</title>
+    <meta
+      name="description"
+      content="Tolaria 笔记工具调研：本地 Markdown、Git 与 AI Agent 协作工作流的产品与技术拆解。"
+    />
+    <style>
+      :root {
+        --bg: #f6f4ef;
+        --paper: #fffefa;
+        --paper-strong: #fbf7ee;
+        --ink: #243034;
+        --muted: #657071;
+        --subtle: #8a8f88;
+        --line: #ddd8ce;
+        --line-strong: #cbc4b7;
+        --accent: #2f6f73;
+        --accent-dark: #224e52;
+        --accent-soft: #dfeae4;
+        --clay: #9c6348;
+        --clay-soft: #efe1d7;
+        --blue-soft: #e7ecef;
+        --shadow: 0 18px 45px rgba(42, 45, 40, 0.1);
+        --max: 1180px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        line-height: 1.6;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .skip-link {
+        position: fixed;
+        left: 16px;
+        top: 10px;
+        z-index: 20;
+        transform: translateY(-150%);
+        background: var(--ink);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid rgba(221, 216, 206, 0.78);
+        background: rgba(246, 244, 239, 0.9);
+        backdrop-filter: blur(14px);
+      }
+
+      .topbar-inner {
+        width: min(var(--max), calc(100% - 32px));
+        min-height: 58px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-weight: 760;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+
+      .brand-mark {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: inline-grid;
+        place-items: center;
+        color: var(--paper);
+        background: var(--accent);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .toplinks {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .toplinks::-webkit-scrollbar {
+        display: none;
+      }
+
+      .toplinks a,
+      .button-link {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 6px 11px;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+
+      .toplinks a:hover,
+      .button-link:hover {
+        border-color: var(--line);
+        color: var(--ink);
+        background: rgba(255, 254, 250, 0.72);
+      }
+
+      .button-link.primary {
+        color: #fff;
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .hero {
+        min-height: min(620px, 78svh);
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        align-items: end;
+        isolation: isolate;
+        background: url("assets/hero-workbench.webp") center / cover no-repeat;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: rgba(31, 47, 48, 0.64);
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 1;
+        width: min(var(--max), calc(100% - 32px));
+        margin: 0 auto;
+        padding: 110px 0 92px;
+        color: #fff;
+      }
+
+      .kicker {
+        width: fit-content;
+        margin: 0 0 18px;
+        border: 1px solid rgba(255, 255, 255, 0.36);
+        border-radius: 999px;
+        padding: 6px 12px;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 13px;
+        font-weight: 720;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 920px;
+        margin: 0 0 20px;
+        font-size: clamp(44px, 7vw, 82px);
+        line-height: 0.96;
+        letter-spacing: 0;
+        text-wrap: balance;
+      }
+
+      .hero-lead {
+        max-width: 820px;
+        margin-bottom: 26px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: clamp(18px, 2.1vw, 25px);
+        line-height: 1.55;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 30px;
+      }
+
+      .hero-actions .button-link {
+        min-height: 42px;
+        border-color: rgba(255, 255, 255, 0.32);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .hero-actions .button-link.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+      }
+
+      .hero-facts {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        max-width: 920px;
+      }
+
+      .hero-fact {
+        min-height: 88px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 8px;
+        padding: 13px 14px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .hero-fact strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 18px;
+      }
+
+      .hero-fact span {
+        display: block;
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .layout {
+        width: min(var(--max), calc(100% - 32px));
+        margin: -34px auto 0;
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+
+      .layout > * {
+        min-width: 0;
+      }
+
+      .toc {
+        position: sticky;
+        top: 78px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(255, 254, 250, 0.88);
+        box-shadow: var(--shadow);
+      }
+
+      .toc-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        color: var(--subtle);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .toc nav {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .toc a {
+        border-radius: 6px;
+        padding: 7px 9px;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 14px;
+        line-height: 1.25;
+      }
+
+      .toc a:hover,
+      .toc a.is-active {
+        color: var(--accent-dark);
+        background: var(--accent-soft);
+      }
+
+      main {
+        min-width: 0;
+      }
+
+      section {
+        scroll-margin-top: 86px;
+        padding: 58px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      section:first-child {
+        padding-top: 0;
+      }
+
+      .section-head {
+        width: 100%;
+        max-width: 790px;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        margin-bottom: 8px;
+        color: var(--clay);
+        font-size: 13px;
+        font-weight: 780;
+      }
+
+      h2 {
+        margin-bottom: 12px;
+        color: var(--ink);
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      h3 {
+        margin-bottom: 9px;
+        color: var(--ink);
+        font-size: 21px;
+        line-height: 1.28;
+      }
+
+      @media (min-width: 1041px) {
+        .section-head {
+          max-width: none;
+        }
+
+        h1,
+        h2,
+        h3 {
+          margin-top: 0.68em;
+          margin-bottom: 0.68em;
+          white-space: nowrap;
+        }
+
+        h1 {
+          max-width: none;
+        }
+
+        h2 {
+          font-size: clamp(28px, 2.5vw, 34px);
+        }
+
+        .eyebrow {
+          margin-bottom: 0;
+        }
+      }
+
+      .section-head p,
+      .lead {
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .card,
+      .panel,
+      .metric,
+      .note-box {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card p,
+      .panel p,
+      .metric p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .card-label {
+        margin-bottom: 8px;
+        color: var(--accent-dark);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .metric {
+        padding: 18px;
+        min-height: 132px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--ink);
+        font-size: 22px;
+        line-height: 1.2;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .panel {
+        overflow: hidden;
+      }
+
+      .panel.pad {
+        padding: 20px;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 12px 14px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+        background: var(--paper-strong);
+      }
+
+      .image-button {
+        width: 100%;
+        display: block;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        cursor: zoom-in;
+      }
+
+      .panel img {
+        width: 100%;
+        height: auto;
+      }
+
+      .caption {
+        margin: 10px 14px 14px;
+        color: var(--subtle);
+        font-size: 13px;
+      }
+
+      .matrix {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .matrix th,
+      .matrix td {
+        border-bottom: 1px solid var(--line);
+        padding: 14px 15px;
+        vertical-align: top;
+        text-align: left;
+      }
+
+      .matrix th {
+        color: var(--accent-dark);
+        font-size: 13px;
+        background: var(--accent-soft);
+      }
+
+      .matrix tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .matrix td:first-child {
+        width: 190px;
+        color: var(--ink);
+        font-weight: 780;
+      }
+
+      .matrix td {
+        color: var(--muted);
+      }
+
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tag-list li,
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 10px;
+        color: var(--muted);
+        background: var(--paper);
+        font-size: 13px;
+        font-weight: 680;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .flow-step {
+        min-height: 118px;
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 15px;
+        background: var(--paper);
+      }
+
+      .flow-step::after {
+        content: ">";
+        position: absolute;
+        right: -11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--line-strong);
+        font-weight: 900;
+      }
+
+      .flow-step:last-child::after {
+        display: none;
+      }
+
+      .flow-step strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--accent-dark);
+      }
+
+      .flow-step span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .callout {
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        padding: 18px 20px;
+        background: var(--accent-soft);
+      }
+
+      .callout.clay {
+        border-left-color: var(--clay);
+        background: var(--clay-soft);
+      }
+
+      .callout p {
+        margin-bottom: 0;
+        color: var(--ink);
+      }
+
+      .note-box {
+        padding: 17px 18px;
+        background: var(--blue-soft);
+      }
+
+      .note-box ul,
+      .card ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+      }
+
+      .note-box li,
+      .card li {
+        margin: 7px 0;
+      }
+
+      .comparison {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .quote {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 22px;
+        background: var(--paper);
+      }
+
+      .quote p {
+        margin-bottom: 0;
+        color: var(--ink);
+        font-size: 20px;
+        line-height: 1.55;
+      }
+
+      .quote strong {
+        color: var(--accent-dark);
+      }
+
+      .source-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .source-list a {
+        color: var(--accent-dark);
+        font-weight: 760;
+      }
+
+      .footer {
+        width: min(var(--max), calc(100% - 32px));
+        margin: 0 auto;
+        padding: 30px 0 44px;
+        color: var(--subtle);
+        font-size: 13px;
+      }
+
+      .lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background: rgba(20, 26, 27, 0.82);
+      }
+
+      .lightbox.is-open {
+        display: flex;
+      }
+
+      .lightbox button {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.36);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        cursor: pointer;
+      }
+
+      .lightbox img {
+        max-height: 88vh;
+        width: auto;
+        border-radius: 8px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+      }
+
+      @media (max-width: 1040px) {
+        .layout {
+          grid-template-columns: 1fr;
+          margin-top: 0;
+        }
+
+        .toc {
+          position: sticky;
+          top: 58px;
+          z-index: 8;
+          margin-top: 16px;
+        }
+
+        .toc nav {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          max-width: 100%;
+          padding-bottom: 2px;
+        }
+
+        .toc a {
+          white-space: nowrap;
+        }
+
+        .split,
+        .grid.two,
+        .grid.three,
+        .grid.four,
+        .comparison {
+          grid-template-columns: 1fr;
+        }
+
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        .flow-step::after {
+          content: "v";
+          right: 18px;
+          top: auto;
+          bottom: -20px;
+          transform: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .topbar-inner {
+          width: min(100% - 22px, var(--max));
+        }
+
+        .toplinks a:not(.primary) {
+          display: none;
+        }
+
+        .hero {
+          min-height: auto;
+          align-items: center;
+          background-position: center top;
+        }
+
+        .hero-inner {
+          width: min(100% - 26px, var(--max));
+          padding: 66px 0 28px;
+        }
+
+        h1 {
+          font-size: 36px;
+          line-height: 1.05;
+        }
+
+        .hero-lead {
+          margin-bottom: 18px;
+          font-size: 16px;
+        }
+
+        .hero-actions {
+          margin-bottom: 16px;
+        }
+
+        .hero-actions .button-link {
+          min-height: 36px;
+          padding: 5px 9px;
+        }
+
+        .hero-facts {
+          grid-template-columns: 1fr 1fr;
+          gap: 7px;
+        }
+
+        .hero-fact {
+          min-height: auto;
+          padding: 9px 10px;
+        }
+
+        .hero-fact strong {
+          font-size: 14px;
+        }
+
+        .hero-fact span {
+          font-size: 12px;
+          line-height: 1.32;
+        }
+
+        .layout {
+          width: min(100% - 22px, var(--max));
+        }
+
+        section {
+          padding: 42px 0;
+        }
+
+        .matrix {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        .matrix td,
+        .matrix th {
+          white-space: normal;
+          min-width: 150px;
+        }
+      }
+
+      @media print {
+        .topbar,
+        .toc,
+        .lightbox {
+          display: none;
+        }
+
+        body {
+          background: #fff;
+        }
+
+        .hero {
+          min-height: auto;
+          background: #fff;
+          color: var(--ink);
+        }
+
+        .hero-inner {
+          color: var(--ink);
+          padding: 30px 0;
+        }
+
+        .hero-lead,
+        .hero-fact span {
+          color: var(--muted);
+        }
+
+        .layout {
+          display: block;
+          margin: 0 auto;
+        }
+
+        section {
+          page-break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#top" aria-label="回到页面顶部">
+          <span class="brand-mark">T</span>
+          <span>Tolaria Research</span>
+        </a>
+        <nav class="toplinks" aria-label="快捷导航">
+          <a href="#quick-read">速读</a>
+          <a href="#product-teardown">产品拆解</a>
+          <a href="#tech-stack">技术</a>
+          <a href="#obsidian">对比</a>
+          <a class="primary" href="https://github.com/refactoringhq/tolaria" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <p class="kicker">调研输出 · 2026.05.28 · 静态 HTML 版</p>
+        <h1 id="hero-title">Tolaria 笔记工具调研</h1>
+        <p class="hero-lead">
+          Tolaria 是一个以本地 Markdown + Git 为底座、面向 AI Agent 协作的跨平台知识库桌面应用。它不是 Obsidian 的全面替代品，而是更适合“AI 可读、可写、可追踪”的本地知识库工作台。
+        </p>
+        <div class="hero-actions" aria-label="页面操作">
+          <a class="button-link primary" href="#quick-read">查看速读结论</a>
+          <a class="button-link" href="#obsidian">跳到 Obsidian 对比</a>
+        </div>
+        <div class="hero-facts" aria-label="核心特征">
+          <div class="hero-fact">
+            <strong>Files-first</strong>
+            <span>笔记首先是磁盘上的 Markdown 文件。</span>
+          </div>
+          <div class="hero-fact">
+            <strong>Git-first</strong>
+            <span>修改历史、diff、回滚和远端同步成为默认能力。</span>
+          </div>
+          <div class="hero-fact">
+            <strong>AI-first</strong>
+            <span>MCP 与 Agent 面板让 AI 能直接维护 vault。</span>
+          </div>
+          <div class="hero-fact">
+            <strong>Offline-first</strong>
+            <span>无账号、无订阅、无云依赖，本地可持续。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc" aria-label="页面目录">
+        <div class="toc-title">
+          <span>目录锚点</span>
+          <span>Anchor</span>
+        </div>
+        <nav>
+          <a href="#quick-read">01 速读结论</a>
+          <a href="#positioning">02 产品定位</a>
+          <a href="#product-teardown">03 产品拆解</a>
+          <a href="#principles">04 设计原则</a>
+          <a href="#ai-workflow">05 AI 协作流</a>
+          <a href="#tech-stack">06 技术拆解</a>
+          <a href="#obsidian">07 Obsidian 对比</a>
+          <a href="#fit">08 适用判断</a>
+          <a href="#conclusion">09 调研结论</a>
+        </nav>
+      </aside>
+
+      <main id="main">
+        <section id="quick-read">
+          <div class="section-head">
+            <p class="eyebrow">01 · Executive Read</p>
+            <h2>速读结论</h2>
+            <p>
+              这份调研的核心判断不是“Tolaria 能不能替代 Obsidian”，而是它是否为 AI Agent 进入个人与团队知识库提供了一套更稳的默认工作流。
+            </p>
+          </div>
+
+          <div class="grid three">
+            <article class="metric">
+              <strong>一句话定位</strong>
+              <p>以本地 Markdown + Git 为底座、面向 AI Agent 协作的跨平台知识库桌面应用。</p>
+            </article>
+            <article class="metric">
+              <strong>核心判断</strong>
+              <p>不是 Obsidian 全面替代品，而是 AI 可读、可写、可追踪的本地知识库工作台。</p>
+            </article>
+            <article class="metric">
+              <strong>增量价值</strong>
+              <p>把 Files-first、Git-first、AI-first 组合成默认流程，降低 AI 直接维护笔记的风险。</p>
+            </article>
+          </div>
+
+          <div class="grid two" style="margin-top: 14px">
+            <article class="card">
+              <div class="card-label">短期认可原因</div>
+              <p>痛点明确、取舍清晰、来自真实高频笔记场景，同时契合 AI Agent 维护个人/团队知识库的趋势。</p>
+            </article>
+            <article class="card">
+              <div class="card-label">当前限制</div>
+              <p>生态成熟度和插件丰富度不如 Obsidian；搜索仍以关键词为主；Git 与 Agent 对完全小白用户仍有学习成本；移动端能力暂未形成优势。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="positioning">
+          <div class="section-head">
+            <p class="eyebrow">02 · Product Positioning</p>
+            <h2>产品定位：AI-friendly Markdown 工作台</h2>
+            <p>
+              Tolaria 的关键不是重新发明笔记编辑器，而是把文件、关系、版本控制和 AI 读写放到同一套本地知识库工作流里。
+            </p>
+          </div>
+
+          <div class="split">
+            <div>
+              <div class="callout">
+                <p>
+                  <strong>核心命题：</strong>人和 AI 共用同一套知识库。用户用界面阅读、组织、审校；Agent 用 Markdown、MCP 和 Git 在同一个 vault 里执行读写。
+                </p>
+              </div>
+              <div class="flow" aria-label="Tolaria 工作流">
+                <div class="flow-step">
+                  <strong>Markdown</strong>
+                  <span>每条笔记都是本地文件，数据不被应用锁死。</span>
+                </div>
+                <div class="flow-step">
+                  <strong>Frontmatter</strong>
+                  <span>通过 type、关系字段与 wikilink 表达结构。</span>
+                </div>
+                <div class="flow-step">
+                  <strong>Git</strong>
+                  <span>版本、diff、回滚和远端同步成为底层保险。</span>
+                </div>
+                <div class="flow-step">
+                  <strong>MCP / Agent</strong>
+                  <span>AI 能索引、读取、创建、追加和编辑笔记。</span>
+                </div>
+                <div class="flow-step">
+                  <strong>UI Reload</strong>
+                  <span>外部修改被感知并回到界面中供人审校。</span>
+                </div>
+              </div>
+            </div>
+            <figure class="panel">
+              <div class="panel-header">
+                <span>建库入口</span>
+                <span>Vault setup</span>
+              </div>
+              <button class="image-button" data-full="assets/onboarding-vault.webp" aria-label="放大查看建库入口截图">
+                <img src="assets/onboarding-vault.webp" alt="Tolaria 创建空仓库、打开本地文件夹、克隆 Git 仓库的入口截图" />
+              </button>
+              <figcaption class="caption">前置引导提供创建空仓库、打开本地文件夹、克隆 Git 仓库和克隆入门仓库四种路径。</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="product-teardown">
+          <div class="section-head">
+            <p class="eyebrow">03 · Product Teardown</p>
+            <h2>产品拆解：从“笔记编辑器”转向“知识库工作台”</h2>
+            <p>
+              Tolaria 的界面不是围绕单篇文档展开，而是围绕 vault、笔记类型、语义关系、AI 面板和 Git 状态共同组织。
+            </p>
+          </div>
+
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>功能逻辑</th>
+                <th>关键效果</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>全局导航</td>
+                <td>Inbox、Archive、Views、Types、All Notes、Folders 等入口。</td>
+                <td>同时支持状态管理、语义管理和真实文件目录管理。</td>
+              </tr>
+              <tr>
+                <td>内容编辑</td>
+                <td>支持渲染阅读、结构化编辑和 Markdown 源码编辑。</td>
+                <td>用户可在“好读”和“可控源码”之间切换。</td>
+              </tr>
+              <tr>
+                <td>关系管理</td>
+                <td>用 frontmatter、wikilink、Belongs to、Related to、Has 组织内容关系。</td>
+                <td>将散点笔记变成可被检索、引用和推理的知识对象。</td>
+              </tr>
+              <tr>
+                <td>AI 读写</td>
+                <td>MCP 工具可索引、读取、创建、追加和修改笔记。</td>
+                <td>Agent 能直接维护 vault，而不是只在聊天窗口里输出建议。</td>
+              </tr>
+              <tr>
+                <td>变更感知</td>
+                <td>外部 Agent 修改文件后，应用可重新加载并展示更新。</td>
+                <td>人和 Agent 可以围绕同一批本地文件协作。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="grid two" style="margin-top: 18px">
+            <figure class="panel">
+              <div class="panel-header">
+                <span>主界面分区</span>
+                <span>Navigation / list / editor / status</span>
+              </div>
+              <button class="image-button" data-full="assets/hero-workbench.webp" aria-label="放大查看 Tolaria 主界面分区截图">
+                <img src="assets/hero-workbench.webp" alt="Tolaria 主界面被标注为导航、列表、编辑区和状态栏" />
+              </button>
+              <figcaption class="caption">导航、列表、编辑器和底部状态栏形成工作台式的信息密度。</figcaption>
+            </figure>
+            <figure class="panel">
+              <div class="panel-header">
+                <span>结构化关系</span>
+                <span>Frontmatter relations</span>
+              </div>
+              <button class="image-button" data-full="assets/metadata-relations.webp" aria-label="放大查看结构化关系面板截图">
+                <img src="assets/metadata-relations.webp" alt="Tolaria Markdown 正文和右侧属性、关系面板截图" />
+              </button>
+              <figcaption class="caption">关系字段把普通 Markdown 文件转成可被组织、检索和推理的知识对象。</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="principles">
+          <div class="section-head">
+            <p class="eyebrow">04 · Design Principles</p>
+            <h2>先进设计原则：默认工作流比插件堆叠更重要</h2>
+            <p>
+              Tolaria 的“opinionated”体现在：它不把关键能力交给用户自己拼装，而是把文件、Git、AI 与键盘操作设计成产品默认路径。
+            </p>
+          </div>
+
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>原则</th>
+                <th>产品含义</th>
+                <th>调研判断</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Files-first</td>
+                <td>每条笔记就是磁盘上的 `.md` 文件，应用只是读写工具。</td>
+                <td>降低迁移风险；即使软件停止更新，数据仍完整存在。</td>
+              </tr>
+              <tr>
+                <td>Git-first</td>
+                <td>每个 vault 都是 Git repository。</td>
+                <td>让 AI 写入变成可审计流程：修改前有快照，修改时看 diff，修改后可回滚。</td>
+              </tr>
+              <tr>
+                <td>Offline-first</td>
+                <td>没有账号、订阅和云依赖。</td>
+                <td>更适合长期资料库、敏感笔记和需要本地自治的工作场景。</td>
+              </tr>
+              <tr>
+                <td>AI-first but not AI-only</td>
+                <td>支持 Claude Code、Codex、Gemini 等 Agent，也能作为普通 Markdown 工具使用。</td>
+                <td>AI 是增强层，不是使用门槛；这点降低了产品采用风险。</td>
+              </tr>
+              <tr>
+                <td>Keyboard-first</td>
+                <td>Command Palette 是高频操作入口。</td>
+                <td>适合高频笔记用户和工程师式工作流，降低多面板操作成本。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <figure class="panel" style="margin-top: 18px">
+            <div class="panel-header">
+              <span>Command Palette</span>
+              <span>Keyboard-first interaction</span>
+            </div>
+            <button class="image-button" data-full="assets/command-palette.webp" aria-label="放大查看 Command Palette 截图">
+              <img src="assets/command-palette.webp" alt="Tolaria Command Palette 快捷命令面板截图" />
+            </button>
+            <figcaption class="caption">Cmd+K 让建库、搜索、配置和切换操作保持在同一入口。</figcaption>
+          </figure>
+        </section>
+
+        <section id="ai-workflow">
+          <div class="section-head">
+            <p class="eyebrow">05 · AI Workflow</p>
+            <h2>AI 协作流：优势在“可操作 + 可追踪”</h2>
+            <p>
+              Tolaria 的 AI 价值不是把聊天框嵌进笔记软件，而是让 Agent 能在边界清晰的 vault 内直接读写，并用 Git 把风险变成可审计记录。
+            </p>
+          </div>
+
+          <div class="grid four">
+            <article class="card">
+              <div class="card-label">MCP Server</div>
+              <p>`search_notes`、`read_note`、`create_note`、`append_to_note` 等工具让 AI 操作知识库。</p>
+            </article>
+            <article class="card">
+              <div class="card-label">Agent Panel</div>
+              <p>右侧 AI 面板支持 Claude Code、Codex、OpenCode、Pi、Gemini、Kiro 等主流 CLI Agent。</p>
+            </article>
+            <article class="card">
+              <div class="card-label">Vault Safe</div>
+              <p>把 Agent 权限限制在当前 vault 中，适合默认安全读写。</p>
+            </article>
+            <article class="card">
+              <div class="card-label">Auto Reload</div>
+              <p>外部文件修改后触发 vault reload，人可以在 UI 里看到结果。</p>
+            </article>
+          </div>
+
+          <div class="grid two" style="margin-top: 18px">
+            <figure class="panel">
+              <div class="panel-header">
+                <span>AI Agent 状态</span>
+                <span>Agent readiness</span>
+              </div>
+              <button class="image-button" data-full="assets/ai-ready.webp" aria-label="放大查看 AI ready 截图">
+                <img src="assets/ai-ready.webp" alt="Tolaria 检测本机 AI Agent 安装状态的界面截图" />
+              </button>
+              <figcaption class="caption">应用会检测本机已安装的 Agent，并给出状态与配置入口。</figcaption>
+            </figure>
+            <figure class="panel">
+              <div class="panel-header">
+                <span>AI 面板协作</span>
+                <span>Agent side panel</span>
+              </div>
+              <button class="image-button" data-full="assets/ai-panel.webp" aria-label="放大查看 AI 面板截图">
+                <img src="assets/ai-panel.webp" alt="Tolaria 右侧 AI 面板与当前笔记协作的截图" />
+              </button>
+              <figcaption class="caption">右侧栏把 Agent 对话放在当前笔记上下文中，方便边看边改。</figcaption>
+            </figure>
+          </div>
+
+          <div class="callout clay" style="margin-top: 18px">
+            <p>
+              <strong>调研判断：</strong>只要 AI 要直接编辑知识库，Git 就不再是高级功能，而是基础安全设施。Tolaria 把这层保险做成默认路径，是它区别于传统笔记工具的重要原因。
+            </p>
+          </div>
+        </section>
+
+        <section id="tech-stack">
+          <div class="section-head">
+            <p class="eyebrow">06 · Technical Stack</p>
+            <h2>技术拆解：轻量桌面壳 + 本地文件系统 + 增量缓存</h2>
+            <p>
+              从技术取舍看，Tolaria 是一个本地文件系统优先的 AI-friendly Markdown 知识库工作台。文件在磁盘上，应用负责读取、索引、展示和写回。
+            </p>
+          </div>
+
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>层面</th>
+                <th>方案</th>
+                <th>判断</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>桌面框架</td>
+                <td>Tauri v2 + React 19 + TypeScript + Rust</td>
+                <td>比传统 Electron 更轻，适合本地文件系统和跨平台桌面应用。</td>
+              </tr>
+              <tr>
+                <td>编辑器</td>
+                <td>BlockNote + CodeMirror 6</td>
+                <td>同时覆盖块式富文本编辑和 Markdown 源码编辑。</td>
+              </tr>
+              <tr>
+                <td>可视化</td>
+                <td>Mermaid + tldraw</td>
+                <td>能承载流程图、架构图、白板草图等知识表达。</td>
+              </tr>
+              <tr>
+                <td>搜索</td>
+                <td>基于关键词和文件扫描</td>
+                <td>足够支撑基础检索，但不是语义搜索或向量检索。</td>
+              </tr>
+              <tr>
+                <td>缓存</td>
+                <td>基于 Git HEAD 增量更新，缓存放在应用目录</td>
+                <td>避免每次全量重扫，也不污染用户原始 vault。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="grid two" style="margin-top: 18px">
+            <figure class="panel">
+              <div class="panel-header">
+                <span>源码 / 渲染切换</span>
+                <span>Markdown control</span>
+              </div>
+              <button class="image-button" data-full="assets/tolaria-reading.webp" aria-label="放大查看 Tolaria 笔记阅读界面截图">
+                <img src="assets/tolaria-reading.webp" alt="Tolaria 笔记阅读和编辑界面截图" />
+              </button>
+              <figcaption class="caption">普通用户可在渲染视图中阅读，高级用户可以回到 Markdown 源码控制。</figcaption>
+            </figure>
+            <figure class="panel">
+              <div class="panel-header">
+                <span>Git Diff</span>
+                <span>Change audit</span>
+              </div>
+              <button class="image-button" data-full="assets/git-diff.webp" aria-label="放大查看 Git Diff 截图">
+                <img src="assets/git-diff.webp" alt="Tolaria 中展示 Git diff 的界面截图" />
+              </button>
+              <figcaption class="caption">当 AI 或用户修改笔记时，diff 让变化从“黑箱输出”变成可审计记录。</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="obsidian">
+          <div class="section-head">
+            <p class="eyebrow">07 · Competitive View</p>
+            <h2>与 Obsidian 对比：成熟生态 vs. 默认 AI 工作流</h2>
+            <p>
+              两者不是简单替代关系。Obsidian 强在成熟生态和自由定制；Tolaria 强在开箱即用的 Git + AI Agent 工作流。
+            </p>
+          </div>
+
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>角度</th>
+                <th>谁更强</th>
+                <th>原因</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>个人长期笔记</td>
+                <td>Obsidian</td>
+                <td>更成熟、插件多、社区大、教程多。</td>
+              </tr>
+              <tr>
+                <td>插件生态</td>
+                <td>Obsidian</td>
+                <td>社区插件和主题数量远超 Tolaria。</td>
+              </tr>
+              <tr>
+                <td>自由定制</td>
+                <td>Obsidian</td>
+                <td>更像 blank canvas，适合搭建高度个人化系统。</td>
+              </tr>
+              <tr>
+                <td>Git 版本控制</td>
+                <td>Tolaria</td>
+                <td>Git 是核心能力，不是后装插件。</td>
+              </tr>
+              <tr>
+                <td>AI Agent 工作流</td>
+                <td>Tolaria</td>
+                <td>设计目标就是让知识库成为 AI 可读写的工作区。</td>
+              </tr>
+              <tr>
+                <td>团队/项目资料库</td>
+                <td>Tolaria</td>
+                <td>Git + Markdown + AI + 关系字段更适合项目化维护。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="comparison" style="margin-top: 18px">
+            <figure class="panel">
+              <div class="panel-header">
+                <span>Tolaria</span>
+                <span>AI / Git oriented</span>
+              </div>
+              <button class="image-button" data-full="assets/tolaria-reading.webp" aria-label="放大查看 Tolaria 界面截图">
+                <img src="assets/tolaria-reading.webp" alt="Tolaria 界面截图" />
+              </button>
+              <figcaption class="caption">更强调 vault、类型、关系、Agent 和 Git 状态的组合。</figcaption>
+            </figure>
+            <figure class="panel">
+              <div class="panel-header">
+                <span>Obsidian</span>
+                <span>Plugin ecosystem</span>
+              </div>
+              <button class="image-button" data-full="assets/obsidian-view.webp" aria-label="放大查看 Obsidian 界面截图">
+                <img src="assets/obsidian-view.webp" alt="Obsidian 界面截图" />
+              </button>
+              <figcaption class="caption">更成熟、更自由，但很多工作流依赖插件组合和个人配置。</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="fit">
+          <div class="section-head">
+            <p class="eyebrow">08 · Fit Assessment</p>
+            <h2>适用判断：谁应该关注 Tolaria</h2>
+            <p>
+              Tolaria 的价值边界很清晰：它适合把知识库当作长期项目资产来维护的人，也适合希望让 Agent 参与资料整理、研究和沉淀的团队。
+            </p>
+          </div>
+
+          <div class="grid three">
+            <article class="note-box">
+              <h3>更适合</h3>
+              <ul>
+                <li>已经使用 Markdown 管理笔记的人。</li>
+                <li>希望 AI Agent 直接读取、整理、追加资料的人。</li>
+                <li>重视版本历史、diff、回滚和跨设备同步的人。</li>
+                <li>把知识库当作项目资料库或团队记忆来维护的人。</li>
+              </ul>
+            </article>
+            <article class="note-box">
+              <h3>不一定适合</h3>
+              <ul>
+                <li>完全不想接触 Git 或命令行概念的新手。</li>
+                <li>高度依赖 Obsidian 插件生态和主题系统的用户。</li>
+                <li>以移动端碎片记录为核心场景的人。</li>
+                <li>需要成熟语义搜索、向量检索和复杂图谱能力的人。</li>
+              </ul>
+            </article>
+            <article class="note-box">
+              <h3>需要观察</h3>
+              <ul>
+                <li>社区活跃度能否持续转化为稳定版本。</li>
+                <li>搜索能力是否从关键词走向语义检索。</li>
+                <li>Agent 权限边界是否足够清晰可控。</li>
+                <li>小白用户能否理解 vault、Git 和 MCP 的组合。</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section id="conclusion">
+          <div class="section-head">
+            <p class="eyebrow">09 · Conclusion</p>
+            <h2>调研结论：价值不在编辑器，而在默认协作范式</h2>
+          </div>
+
+          <div class="quote">
+            <p>
+              Tolaria 的价值不在于又做了一个 Markdown 编辑器，而在于把本地文件、Git 版本控制和 AI Agent 读写能力整合成一套默认知识库工作流。它最值得关注的地方，是把“AI 维护知识库”从一次性聊天输出，推进到<strong>可持续、可审计、可回滚</strong>的日常工作方式。
+            </p>
+          </div>
+          <ul class="tag-list" aria-label="结论标签">
+            <li>本地优先</li>
+            <li>Git 可审计</li>
+            <li>AI 可读写</li>
+            <li>Markdown 可迁移</li>
+            <li>适合项目化知识库</li>
+          </ul>
+        </section>
+
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p>© 2026 Tolaria Research Brief. 本页面为调研展示页，不代表 Tolaria 官方立场。</p>
+    </footer>
+
+    <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-label="图片预览">
+      <button type="button" id="lightbox-close">关闭</button>
+      <img id="lightbox-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" />
+    </div>
+
+    <script>
+      const tocLinks = Array.from(document.querySelectorAll(".toc a"));
+      const sections = tocLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const active = `.toc a[href="#${entry.target.id}"]`;
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link.matches(active)));
+          });
+        },
+        { rootMargin: "-34% 0px -58% 0px", threshold: 0.01 }
+      );
+
+      sections.forEach((section) => observer.observe(section));
+
+      const lightbox = document.getElementById("lightbox");
+      const lightboxImg = document.getElementById("lightbox-img");
+      const closeLightbox = document.getElementById("lightbox-close");
+      const blankImage = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+
+      document.querySelectorAll(".image-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const image = button.querySelector("img");
+          lightboxImg.src = button.dataset.full || image.src;
+          lightboxImg.alt = image.alt;
+          lightbox.classList.add("is-open");
+          lightbox.setAttribute("aria-hidden", "false");
+          closeLightbox.focus();
+        });
+      });
+
+      function dismissLightbox() {
+        lightbox.classList.remove("is-open");
+        lightbox.setAttribute("aria-hidden", "true");
+        lightboxImg.src = blankImage;
+      }
+
+      closeLightbox.addEventListener("click", dismissLightbox);
+      lightbox.addEventListener("click", (event) => {
+        if (event.target === lightbox) dismissLightbox();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && lightbox.classList.contains("is-open")) {
+          dismissLightbox();
+        }
+      });
+    </script>
+  </body>
+</html>
