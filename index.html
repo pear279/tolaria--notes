@@ -672,6 +672,43 @@
         font-weight: 760;
       }
 
+      .scenario-card {
+        display: flex;
+        min-height: 390px;
+        flex-direction: column;
+        gap: 13px;
+      }
+
+      .scenario-card h3 {
+        margin-bottom: 0;
+      }
+
+      .scenario-card dl {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+      }
+
+      .scenario-card dt {
+        margin-bottom: 2px;
+        color: var(--accent-dark);
+        font-size: 13px;
+        font-weight: 820;
+      }
+
+      .scenario-card dd {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .scenario-card .obsidian-gap {
+        margin-top: auto;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+      }
+
       .footer {
         width: min(var(--max), calc(100% - 32px));
         margin: 0 auto;
@@ -1299,6 +1336,75 @@
             <p>
               两者不是简单替代关系。Obsidian 强在成熟生态和自由定制；Tolaria 强在开箱即用的 Git + AI Agent 工作流。
             </p>
+          </div>
+
+          <div class="grid three" style="margin-bottom: 18px">
+            <article class="card scenario-card">
+              <div class="card-label">用户场景对比</div>
+              <h3>产品 / 研发</h3>
+              <dl>
+                <div>
+                  <dt>场景</dt>
+                  <dd>PRD、会议纪要整理成团队知识库。</dd>
+                </div>
+                <div>
+                  <dt>痛点</dt>
+                  <dd>文档散；版本不可追溯；AI 对话容易漏关键信息。</dd>
+                </div>
+                <div>
+                  <dt>Tolaria 解决什么</dt>
+                  <dd>结构化管理文档；Git 记录每次改动；AGENTS 文件指导、约束 AI。</dd>
+                </div>
+                <div class="obsidian-gap">
+                  <dt>Obsidian 不擅长的问题</dt>
+                  <dd>团队级 Git 工作流、AI Agent 可读结构、关系语义约定不是核心设计，需要插件和人工规范。</dd>
+                </div>
+              </dl>
+            </article>
+            <article class="card scenario-card">
+              <div class="card-label">用户场景对比</div>
+              <h3>内容创作者</h3>
+              <dl>
+                <div>
+                  <dt>场景</dt>
+                  <dd>管理 1 万篇以上笔记、素材，并持续产出文章 / 报告。</dd>
+                </div>
+                <div>
+                  <dt>痛点</dt>
+                  <dd>笔记越多越难找；双链多但关系含义不清；旧素材难复用。</dd>
+                </div>
+                <div>
+                  <dt>Tolaria 解决什么</dt>
+                  <dd>用 Type 设置属性；文件之间建立包含、从属、相关关系；适合大规模知识库导航和快速搜索。</dd>
+                </div>
+                <div class="obsidian-gap">
+                  <dt>Obsidian 不擅长的问题</dt>
+                  <dd>关系类型不够语义化；要表达“属于 / 包含 / 相关”通常要靠插件或自定义规则。</dd>
+                </div>
+              </dl>
+            </article>
+            <article class="card scenario-card">
+              <div class="card-label">用户场景对比</div>
+              <h3>Agent 重度用户</h3>
+              <dl>
+                <div>
+                  <dt>场景</dt>
+                  <dd>存放 AI 助手的记忆、规范。</dd>
+                </div>
+                <div>
+                  <dt>痛点</dt>
+                  <dd>AI 每次任务都要重新解释背景；文档散落，难以被 Agent 调用。</dd>
+                </div>
+                <div>
+                  <dt>Tolaria 解决什么</dt>
+                  <dd>本地文件即上下文；结构化信息 Agent 更容易读懂；离线、本地、无云锁定；Git 可回滚错误修改。</dd>
+                </div>
+                <div class="obsidian-gap">
+                  <dt>Obsidian 不擅长的问题</dt>
+                  <dd>不是围绕 AI Agent 执行任务、读取流程、维护记忆来设计；Agent 使用时需要额外约定和适配。</dd>
+                </div>
+              </dl>
+            </article>
           </div>
 
           <table class="matrix">
